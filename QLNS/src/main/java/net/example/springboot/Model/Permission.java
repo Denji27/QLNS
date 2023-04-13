@@ -19,7 +19,7 @@ public class Permission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long permissionId;
 
-    @ManyToMany(mappedBy = "permissions")
+    @ManyToMany(mappedBy = "permissions", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Collection<Role> roles;
 
     @Column(name = "permissionName")

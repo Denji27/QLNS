@@ -17,7 +17,6 @@ public class EmployeeDTO {
     private RoleDTO role;
     private String DoB;
     private String address;
-
     private String status;
     private LocalDateTime createdDate;
     private LocalDateTime lastModifiedDate;

@@ -1,6 +1,7 @@
 package net.example.springboot.Configuration;
 
 import lombok.RequiredArgsConstructor;
+import net.example.springboot.Model.Permission;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -24,7 +25,7 @@ public class SecurityConfig {
         httpSecurity
                 .csrf().disable()
                 .authorizeHttpRequests()
-                .requestMatchers("/home/**")
+                .requestMatchers("/v1/home/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated()

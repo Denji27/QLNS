@@ -12,8 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
 
 @Entity
 @Builder
@@ -38,7 +37,7 @@ public class Employee extends Auditable implements UserDetails {
     @Column(name= "email")
     private String email;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name= "roleId")
     private Role role;
 
@@ -60,7 +59,7 @@ public class Employee extends Auditable implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority(role.getRoleName()));
+        return List.of(new SimpleGrantedAuthority(role.getRoleId()+""));
     }
 
     @Override
