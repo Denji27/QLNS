@@ -1,7 +1,7 @@
 package net.example.springboot.Configuration;
 
 import lombok.RequiredArgsConstructor;
-import net.example.springboot.Repository.EmployeeRepository;
+import net.example.springboot.Repository.UserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,14 +18,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 @RequiredArgsConstructor
 public class ApplicationConfig {
-    private final EmployeeRepository employeeRepository;
+    private final UserRepository userRepository;
 
     @Bean
     public UserDetailsService userDetailsService(){
         return new UserDetailsService() {
             @Override
             public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-                return employeeRepository.findByEmail(email)
+                return userRepository.findByEmail(email)
                         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
             }
         };

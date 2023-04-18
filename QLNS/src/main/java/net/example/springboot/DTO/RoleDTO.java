@@ -5,11 +5,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class RoleDTO {
     private Long id;
-    private String roleName;
+    private String name;
+    private Collection<PermissionDTO> permissions;
 }

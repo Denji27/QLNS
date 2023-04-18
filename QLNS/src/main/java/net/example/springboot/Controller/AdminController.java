@@ -1,10 +1,11 @@
 package net.example.springboot.Controller;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import net.example.springboot.Model.Role;
 import net.example.springboot.Request.AssignRequest;
 import net.example.springboot.Request.RegisterRequest;
-import net.example.springboot.Service.EmployeeService;
+import net.example.springboot.Service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -12,29 +13,24 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/v1/admin")
 @AllArgsConstructor
+@NoArgsConstructor
+@PreAuthorize("hasAuthority('ADMIN')")
 public class AdminController {
-    private EmployeeService employeeService;
+    private UserService userService;
 
     @GetMapping("/all-employees")
-    @PreAuthorize("hasAuthority('1')")
     public ResponseEntity<?> showAllEmployees(){
-        return ResponseEntity.ok(employeeService.showAllEmployee());
+        return ResponseEntity.ok(userService.showAllEmployee());
     }
 
     @PostMapping("/new-admin")
-    @PreAuthorize("hasAuthority('1')")
     public ResponseEntity<?> createAdmin(@RequestBody RegisterRequest registerRequest) {
-        return ResponseEntity.ok(employeeService.createAdmin(registerRequest));
+        return ResponseEntity.ok(userService.createAdmin(registerRequest));
     }
 
-    @PostMapping("/new-role")
-    @PreAuthorize("hasAuthority('1')")
-    public ResponseEntity<?> createRole(@RequestBody Role role) {
-        return ResponseEntity.ok(employeeService.createRole(role));
-    }
+
     @PostMapping("/role-to-employee")
-    @PreAuthorize("hasAuthority('1')")
     public void assignAsUser(@RequestBody AssignRequest assignRequest) {
-        employeeService.assignRole(assignRequest);
+        userService.assignRole(assignRequest);
     }
 }

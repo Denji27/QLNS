@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.example.springboot.Model.Employee;
+import net.example.springboot.Model.User;
 @Data
 @Builder
 @NoArgsConstructor
@@ -28,5 +28,5 @@ public class Token {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employeeId")
-    public Employee employee;
+    public User user;
 }
