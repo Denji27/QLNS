@@ -28,6 +28,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests()
                 .requestMatchers("/v1/home/**")
                 .permitAll()
+                .requestMatchers("/v1/employee/**")
+                .hasAuthority("EMPLOYEE")
+                .requestMatchers("/v1/admin")
+                .hasAnyAuthority("ADMIN","MANAGER")
                 .anyRequest()
                 .authenticated()
                 .and()
@@ -36,7 +40,6 @@ public class SecurityConfig {
                 .and()
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-//                .addFilterAfter(roleFilter, jwtAuthenticationFilter.getClass());
         return httpSecurity.build();
     }
 }

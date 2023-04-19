@@ -1,9 +1,9 @@
 package net.example.springboot.Service.Impl;
 
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import net.example.springboot.DTO.UserDTO;
 import net.example.springboot.DTO.MapperDTO;
 import net.example.springboot.Model.User;
@@ -16,6 +16,7 @@ import net.example.springboot.Service.UserService;
 import net.example.springboot.Service.JwtService;
 import net.example.springboot.Token.Token;
 import net.example.springboot.Token.TokenType;
+import net.example.springboot.email.EmailService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +51,7 @@ public class UserServiceImpl implements UserService {
     private AuthenticationManager authenticationManager;
     private ModelMapper modelMapper;
     private UserDetailsService userDetailsService;
+    private EmailService emailService;
 
     @Override
     public User register(RegisterRequest registerRequest) {
@@ -60,7 +62,7 @@ public class UserServiceImpl implements UserService {
                 .email(registerRequest.getEmail())
                 .DoB(registerRequest.getDoB())
                 .status("identifying")
-                .role(roleRepository.findRoleByRoleId(3))
+                .role(roleRepository.findRoleByRoleId(5))
                 .address(registerRequest.getAddress())
                 .build();
         userRepository.save(user);
@@ -70,19 +72,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
+    public AuthenticationResponse login(LoginRequest loginRequest) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        authenticationRequest.getEmail()
-                        , authenticationRequest.getPassword())
+                        loginRequest.getEmail()
+                        , loginRequest.getPassword())
         );
-        var employee = userRepository.findByEmail(authenticationRequest.getEmail())
-                .orElseThrow();
-        if(employee.getRole().getRoleId()!=3) {
-            String jwt = jwtService.generateToken(employee);
-            String refreshToken = jwtService.generateRefreshToken(employee);
-            revokeAllEmployeeTokens(employee);
-            saveEmployeeToken(employee, jwt);
+        User user = userRepository.findByEmail(loginRequest.getEmail());
+        if(user.getRole().getRoleId()!=5) {
+            String jwt = jwtService.generateToken(user);
+            String refreshToken = jwtService.generateRefreshToken(user);
+            revokeAllEmployeeTokens(user);
+            saveEmployeeToken(user, jwt);
             return AuthenticationResponse.builder()
                     .jwt(jwt)
                     .refreshToken(refreshToken)
@@ -114,7 +115,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDTO> showAllEmployee() {
+    public List<UserDTO> showAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
                 .map(e -> modelMapper.map(e, UserDTO.class))
@@ -123,28 +124,39 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void assignRole(AssignRequest assignRequest) {
-        for (User user : userRepository.findAll()){
-            if(user.getUsername().equals(assignRequest.getEmail())){
-                user.setRole(roleRepository.findRoleByRoleId(assignRequest.getRoleId()));
-                user.setStatus("approved");
-                userRepository.save(user);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))) {
+            for (User user : userRepository.findAll()) {
+                if (user.getUsername().equals(assignRequest.getEmail())) {
+                    user.setRole(roleRepository.findRoleByRoleId(assignRequest.getRoleId()));
+                    user.setStatus("approved");
+                    userRepository.save(user);
+                }
             }
         }
     }
 
     @Override
     public User createAdmin(RegisterRequest registerRequest) {
-        User user = User.builder()
-                .name(registerRequest.getName())
-                .userName(registerRequest.getUserName())
-                .password( passwordEncoder.encode(registerRequest.getPassword()))
-                .email(registerRequest.getEmail())
-                .DoB(registerRequest.getDoB())
-                .address(registerRequest.getAddress())
-                .role(roleRepository.findRoleByRoleId(1))
-                .build();
-        User saveUser = userRepository.save(user);
-        return user;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))){
+            User user = User.builder()
+                    .name(registerRequest.getName())
+                    .userName(registerRequest.getUserName())
+                    .password( passwordEncoder.encode(registerRequest.getPassword()))
+                    .email(registerRequest.getEmail())
+                    .DoB(registerRequest.getDoB())
+                    .address(registerRequest.getAddress())
+                    .role(roleRepository.findRoleByRoleId(1))
+                    .build();
+            User saveUser = userRepository.save(user);
+            return user;
+        }
+        return null;
     }
 
     @Override
@@ -158,8 +170,7 @@ public class UserServiceImpl implements UserService {
         refreshToken = authHeader.substring(7);
         userEmail = jwtService.extractEmail(refreshToken);
         if (userEmail != null){
-            var employee = this.userRepository.findByEmail(userEmail)
-                    .orElseThrow();
+            var employee = this.userRepository.findByEmail(userEmail);
             if(jwtService.isTokenValid(refreshToken, employee)){
                 String accessToken = jwtService.generateToken(employee);
                 saveEmployeeToken(employee, accessToken);
@@ -173,7 +184,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Role createRole(Role role) {
-        return roleRepository.save(role);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))){
+            return roleRepository.save(role);
+        }
+        return null;
     }
 
     @Override
@@ -181,7 +198,7 @@ public class UserServiceImpl implements UserService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         MapperDTO mapperDTO = new MapperDTO();
-        return mapperDTO.toEmployeeDTO(userRepository.findByEmail(username).get());
+        return mapperDTO.toEmployeeDTO(userRepository.findByEmail(username));
     }
 
     @Override
@@ -193,8 +210,7 @@ public class UserServiceImpl implements UserService {
         UserDetails userDetails= userDetailsService.loadUserByUsername(userEmail);
 
         if(email.equals(userEmail) && passwordEncoder.matches(password, userDetails.getPassword())){
-            Optional<User> employee = userRepository.findByEmail(email);
-            User e = employee.get();
+            User e = userRepository.findByEmail(email);
             e.setPassword(passwordEncoder.encode(request.getNewPassword()));
             userRepository.save(e);
             MapperDTO mapperDTO = new MapperDTO();
@@ -205,41 +221,74 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Permission createPermission(Permission permission) {
-        return permissionRepository.save(permission);
+    public String forgetPassword(ForgetPasswordRequest forgetPasswordRequest) throws MessagingException {
+        String email = forgetPasswordRequest.getEmail();
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            if (user.getEmail().equals(email)) {
+                user.setPassword(passwordEncoder.encode("newPass"));
+                userRepository.save(user);
+                emailService.sendMail(email, "Your new password", "newPass");
+                return "We have sent an email to give you a new password, please check!!";
+            }
+
+        }
+        return "We cannot find your email, please fill your email again";
     }
 
     @Override
-    public List<UserDTO> showAllNoneEmployee() {
-        List<User> users = (List<User>) userRepository.findAll();
-        List<User> nonUser = new ArrayList<>();
+    public Permission createPermission(Permission permission) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))){
+            return permissionRepository.save(permission);
+        }
+        return null;
+    }
+
+    @Override
+    public List<UserDTO> showAllGuestUser() {
+        List<User> users = userRepository.findAll();
+        List<User> guest = new ArrayList<>();
         for (User user : users){
-            if (user.getStatus()== null || equals("identifying")){
-                nonUser.add(user);
+            if (user.getStatus().equals("identifying")){
+                guest.add(user);
             }
         }
-        return nonUser.stream()
+        return guest.stream()
                 .map(e -> modelMapper.map(e, UserDTO.class))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Page<User> showPageAllEmployee(int pageNo, int pageSize) {
+    public Page<User> showPageAllUser(int pageNo, int pageSize) {
         Pageable firstPageWithTwoElements = PageRequest.of(pageNo, pageSize);
         return userRepositoryPageable.findAll(firstPageWithTwoElements);
     }
 
     @Override
+    public String deleteUser(DeleteUserRequest deleteUserRequest) {
+        userRepository.delete(userRepository.findByEmail(deleteUserRequest.getEmail()));
+        return "Delete " + deleteUserRequest.getEmail() +" user successfully";
+    }
+
+    @Override
     public void addPermissionToRole(PermissionToRole permissionToRole) {
-        Permission permission = permissionRepository.findByPermissionName(permissionToRole.getPermission());
-        Role role = roleRepository.findRoleByRoleName(permissionToRole.getRole());
-        for(Role r : roleRepository.findAll()){
-            if(r.getRoleName().equals(permissionToRole.getRole())){
-                Collection<Permission> permissions = r.getPermissions();
-                permissions.add(permission);
-                r.setPermissions(permissions);
-                roleRepository.save(r);
-                System.out.println("Success");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))){
+            Permission permission = permissionRepository.findByPermissionName(permissionToRole.getPermission());
+            Role role = roleRepository.findRoleByRoleName(permissionToRole.getRole());
+            for(Role r : roleRepository.findAll()){
+                if(r.getRoleName().equals(permissionToRole.getRole())){
+                    Collection<Permission> permissions = r.getPermissions();
+                    permissions.add(permission);
+                    r.setPermissions(permissions);
+                    roleRepository.save(r);
+                    System.out.println("Success");
+                }
             }
         }
     }

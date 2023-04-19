@@ -22,7 +22,7 @@ public class Role extends Auditable{
 //    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL)
 //    private Collection<Employee> employees;
 
-    @ManyToMany(cascade = CascadeType.ALL, fetch=FetchType.EAGER)
+    @ManyToMany(fetch=FetchType.EAGER)
     @JoinTable(
             name = "role_has_permission",
             joinColumns = @JoinColumn(name = "roleId"),

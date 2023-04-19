@@ -1,5 +1,6 @@
 package net.example.springboot.Service;
 
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.example.springboot.DTO.UserDTO;
@@ -15,17 +16,28 @@ import java.util.List;
 
 public interface UserService {
     User register(RegisterRequest registerRequest);
-    AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest);
-    List<UserDTO> showAllEmployee();
-    void assignRole(AssignRequest assignRequest);
+    AuthenticationResponse login(LoginRequest loginRequest);
+
+
+
+
+    //admin
     User createAdmin(RegisterRequest registerRequest);
-    void refreshToken(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException;
+    void assignRole(AssignRequest assignRequest);
     Role createRole(Role role);
+    Permission createPermission(Permission permission);
+    void addPermissionToRole(PermissionToRole permissionToRole);
+    List<UserDTO> showAllUsers();
+    List<UserDTO> showAllGuestUser();
+    Page<User> showPageAllUser(int pageNo, int pageSize);
+    String deleteUser(DeleteUserRequest deleteUserRequest);
+
+
+    //employee
+    void refreshToken(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException;
     UserDTO showProfile();
     UserDTO changePassword(ChangePasswordRequest request);
-    Permission createPermission(Permission permission);
-    List<UserDTO> showAllNoneEmployee();
-    Page<User> showPageAllEmployee(int pageNo, int pageSize);
-    void addPermissionToRole(PermissionToRole permissionToRole);
-    //
+    String forgetPassword(ForgetPasswordRequest forgetPasswordRequest) throws MessagingException;
+
+
 }

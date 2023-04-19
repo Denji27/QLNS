@@ -1,5 +1,7 @@
 package net.example.springboot.Controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import net.example.springboot.Request.ChangePasswordRequest;
@@ -8,11 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/v1/employee")
 @AllArgsConstructor
-@NoArgsConstructor
-@PreAuthorize("hasAuthority('EMPLOYEE')")
+//@PreAuthorize("hasAuthority('EMPLOYEE')")
 public class EmployeeController {
     private UserService userService;
 
@@ -24,5 +27,11 @@ public class EmployeeController {
     @PostMapping("/new-password")
     public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request){
         return ResponseEntity.ok(userService.changePassword(request));
+    }
+    @PostMapping("/refresh-token")
+    public void refreshToken(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        userService.refreshToken(request, response);
     }
 }

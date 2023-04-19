@@ -37,7 +37,7 @@ public class User extends Auditable implements UserDetails {
     @Column(name= "email")
     private String email;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name= "roleId")
     private Role role;
 
