@@ -15,6 +15,7 @@ public class MapperDTO {
         userDTO.setEmail(user.getEmail());
         userDTO.setName(user.getName());
         userDTO.setDoB(user.getDoB());
+        userDTO.setStatus(user.getStatus());
         userDTO.setRole(toRoleDTO(user.getRole()));
         userDTO.setUserName(user.getUsername());
         userDTO.setCreatedDate(user.getCreatedDate());

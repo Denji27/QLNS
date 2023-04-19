@@ -12,10 +12,17 @@ public class MailConfig {
     @Bean
     public JavaMailSender javaMailSender(){
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
-        mailSender.setUsername("duyanhaa1@gmail.com");
-        mailSender.setPassword("khbwkzzionqengro");
+        mailSender.setHost("sandbox.smtp.mailtrap.io");
+        mailSender.setPort(2525);
+        mailSender.setUsername("bcbaa9491afdcb");
+        mailSender.setPassword("e90369deca8742");
+
+//        host = "sandbox.smtp.mailtrap.io"
+//        port = 2525
+//        ssl = no
+//        tls = yes
+//        user = "bcbaa9491afdcb"
+//        password = "e90369deca8742"
 
         Properties properties = mailSender.getJavaMailProperties();
         properties.put("mail.smtp.auth", "true");

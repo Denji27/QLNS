@@ -4,6 +4,8 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import net.example.springboot.DTO.PermissionDTO;
+import net.example.springboot.DTO.RoleDTO;
 import net.example.springboot.DTO.UserDTO;
 import net.example.springboot.DTO.MapperDTO;
 import net.example.springboot.Model.User;
@@ -34,7 +36,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,7 +63,7 @@ public class UserServiceImpl implements UserService {
                 .email(registerRequest.getEmail())
                 .DoB(registerRequest.getDoB())
                 .status("identifying")
-                .role(roleRepository.findRoleByRoleId(5))
+                .role(roleRepository.findRoleByRoleName("GUEST"))
                 .address(registerRequest.getAddress())
                 .build();
         userRepository.save(user);
@@ -79,11 +80,11 @@ public class UserServiceImpl implements UserService {
                         , loginRequest.getPassword())
         );
         User user = userRepository.findByEmail(loginRequest.getEmail());
-        if(user.getRole().getRoleId()!=5) {
+        if(!user.getRole().getRoleName().equals("GUEST")) {
             String jwt = jwtService.generateToken(user);
             String refreshToken = jwtService.generateRefreshToken(user);
-            revokeAllEmployeeTokens(user);
-            saveEmployeeToken(user, jwt);
+            revokeAllUsersToken(user);
+            saveUserToken(user, jwt);
             return AuthenticationResponse.builder()
                     .jwt(jwt)
                     .refreshToken(refreshToken)
@@ -93,7 +94,7 @@ public class UserServiceImpl implements UserService {
                 .jwt("Your account hasn't been approved yet")
                 .build();
     }
-    private void revokeAllEmployeeTokens(User user) {
+    private void revokeAllUsersToken(User user) {
         var validEmployeeTokens = tokenRepository.findAllValidTokenByUser(user.getId());
         if (validEmployeeTokens.isEmpty())
             return;
@@ -103,8 +104,8 @@ public class UserServiceImpl implements UserService {
         });
         tokenRepository.saveAll(validEmployeeTokens);
     }
-    private void saveEmployeeToken(User user, String jwtToken) {
-        var token = Token.builder()
+    private void saveUserToken(User user, String jwtToken) {
+        Token token = Token.builder()
                 .user(user)
                 .token(jwtToken)
                 .tokenType(TokenType.BEARER)
@@ -114,16 +115,10 @@ public class UserServiceImpl implements UserService {
         tokenRepository.save(token);
     }
 
-    @Override
-    public List<UserDTO> showAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream()
-                .map(e -> modelMapper.map(e, UserDTO.class))
-                .collect(Collectors.toList());
-    }
+
 
     @Override
-    public void assignRole(AssignRequest assignRequest) {
+    public String assignRole(AssignRequest assignRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         User u = userRepository.findByEmail(userEmail);
@@ -133,9 +128,13 @@ public class UserServiceImpl implements UserService {
                     user.setRole(roleRepository.findRoleByRoleId(assignRequest.getRoleId()));
                     user.setStatus("approved");
                     userRepository.save(user);
+                    return "Assign role "
+                            + roleRepository.findRoleByRoleId(assignRequest.getRoleId()).getRoleName()
+                            + " to "+ assignRequest.getEmail() + " user successfully";
                 }
             }
         }
+        return "Your account has no permission to assign role to other people";
     }
 
     @Override
@@ -150,6 +149,7 @@ public class UserServiceImpl implements UserService {
                     .password( passwordEncoder.encode(registerRequest.getPassword()))
                     .email(registerRequest.getEmail())
                     .DoB(registerRequest.getDoB())
+                    .status("approved")
                     .address(registerRequest.getAddress())
                     .role(roleRepository.findRoleByRoleId(1))
                     .build();
@@ -160,26 +160,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void refreshToken(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
+    public String refreshToken(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
          String authHeader = httpServletRequest.getHeader("Authorization");
          String refreshToken;
         String userEmail;
         if(authHeader == null || !authHeader.startsWith("Bearer ")){
-            return;
+            return "token is invalid";
         }
         refreshToken = authHeader.substring(7);
         userEmail = jwtService.extractEmail(refreshToken);
         if (userEmail != null){
-            var employee = this.userRepository.findByEmail(userEmail);
-            if(jwtService.isTokenValid(refreshToken, employee)){
-                String accessToken = jwtService.generateToken(employee);
-                saveEmployeeToken(employee, accessToken);
+            User user = this.userRepository.findByEmail(userEmail);
+            if(jwtService.isTokenValid(refreshToken, user)){
+                String accessToken = jwtService.generateToken(user);
+                revokeAllUsersToken(user);
+                saveUserToken(user, accessToken);
                 AuthenticationResponse authenticationResponse = AuthenticationResponse.builder()
                         .jwt(accessToken)
                         .refreshToken(refreshToken)
                         .build();
+                return "jwt: " + authenticationResponse.getJwt() + "   ========   " + "refreshToken: " + authenticationResponse.getRefreshToken();
             }
         }
+        return "@@@";
     }
 
     @Override
@@ -190,6 +193,7 @@ public class UserServiceImpl implements UserService {
         if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))){
             return roleRepository.save(role);
         }
+        System.out.println("you have no permission for this action");
         return null;
     }
 
@@ -274,13 +278,36 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<RoleDTO> showAllRoles() {
+        List<Role> roles = roleRepository.findAll();
+        return roles.stream()
+                .map(r -> modelMapper.map(r, RoleDTO.class))
+                .collect(Collectors.toList());
+    }
+    @Override
+    public List<UserDTO> showAllUsers() {
+        List<User> users = userRepository.findAll();
+        return users.stream()
+                .map(u -> modelMapper.map(u, UserDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PermissionDTO> showAllPermission() {
+        List<Permission> permissions = permissionRepository.findAll();
+        return permissions.stream()
+                .map(p -> modelMapper.map(p, PermissionDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void addPermissionToRole(PermissionToRole permissionToRole) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         User u = userRepository.findByEmail(userEmail);
         if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))){
             Permission permission = permissionRepository.findByPermissionName(permissionToRole.getPermission());
-            Role role = roleRepository.findRoleByRoleName(permissionToRole.getRole());
+//            Role role = roleRepository.findRoleByRoleName(permissionToRole.getRole());
             for(Role r : roleRepository.findAll()){
                 if(r.getRoleName().equals(permissionToRole.getRole())){
                     Collection<Permission> permissions = r.getPermissions();
@@ -292,5 +319,7 @@ public class UserServiceImpl implements UserService {
             }
         }
     }
+
+
 
 }

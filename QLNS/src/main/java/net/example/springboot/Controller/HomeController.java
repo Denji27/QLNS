@@ -35,11 +35,21 @@ public class HomeController {
     public ResponseEntity<?> forgetPassword(@RequestBody ForgetPasswordRequest forgetPasswordRequest) throws MessagingException {
         return ResponseEntity.ok(userService.forgetPassword(forgetPasswordRequest));
     }
-
-
-
-
-
-
-
+//    @PostMapping("/admin")
+//    public ResponseEntity<?> createAdmin(@RequestBody RegisterRequest registerRequest) {
+//        return ResponseEntity.ok(userService.createAdmin(registerRequest));
+//    }
+//    @PostMapping("/permission-to-role")
+//    public String addPermissionToRole(@RequestBody PermissionToRole permissionToRole){
+//        userService.addPermissionToRole(permissionToRole);
+//        return "add successfully";
+//    }
+//    @PostMapping("/new-role")
+//    public ResponseEntity<?> createRole(@RequestBody Role role) {
+//        return ResponseEntity.ok(userService.createRole(role));
+//    }
+//    @PostMapping("/permission")
+//    public ResponseEntity<?> createPermission(@RequestBody Permission permission){
+//        return ResponseEntity.ok(userService.createPermission(permission));
+//    }
 }

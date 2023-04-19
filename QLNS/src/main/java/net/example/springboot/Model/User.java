@@ -34,7 +34,7 @@ public class User extends Auditable implements UserDetails {
     @Column(name= "password")
     private String password;
 
-    @Column(name= "email")
+    @Column(name= "email",unique = true)
     private String email;
 
     @ManyToOne(fetch = FetchType.EAGER)

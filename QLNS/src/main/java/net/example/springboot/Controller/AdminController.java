@@ -1,5 +1,7 @@
 package net.example.springboot.Controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import net.example.springboot.Model.Permission;
@@ -12,6 +14,8 @@ import net.example.springboot.Service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/v1/admin")
@@ -26,8 +30,8 @@ public class AdminController {
     }
 
     @PostMapping("/role-to-user")
-    public void assignAsUser(@RequestBody AssignRequest assignRequest) {
-        userService.assignRole(assignRequest);
+    public ResponseEntity<?> assignAsUser(@RequestBody AssignRequest assignRequest) {
+        return ResponseEntity.ok(userService.assignRole(assignRequest));
     }
 
     @GetMapping("/guests")
@@ -64,5 +68,19 @@ public class AdminController {
     @DeleteMapping("/user")
     public ResponseEntity<?> deleteUser(@RequestBody DeleteUserRequest deleteUserRequest){
         return ResponseEntity.ok(userService.deleteUser(deleteUserRequest));
+    }
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        return ResponseEntity.ok(userService.refreshToken(request, response));
+    }
+    @GetMapping("/roles")
+    public ResponseEntity<?> showAllRoles(){
+        return ResponseEntity.ok(userService.showAllRoles());
+    }
+    @GetMapping("/permission")
+    public ResponseEntity<?> showAllPermission(){
+        return ResponseEntity.ok(userService.showAllPermission());
     }
 }

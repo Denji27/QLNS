@@ -29,9 +29,9 @@ public class EmployeeController {
         return ResponseEntity.ok(userService.changePassword(request));
     }
     @PostMapping("/refresh-token")
-    public void refreshToken(
+    public ResponseEntity<?> refreshToken(
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
-        userService.refreshToken(request, response);
+        return ResponseEntity.ok(userService.refreshToken(request, response));
     }
 }
