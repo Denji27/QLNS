@@ -83,4 +83,8 @@ public class AdminController {
     public ResponseEntity<?> showAllPermission(){
         return ResponseEntity.ok(userService.showAllPermission());
     }
+    @PutMapping("/remove-one-permission")
+    public ResponseEntity<?> removePermission(@RequestBody PermissionToRole permissionToRole){
+        return ResponseEntity.ok(userService.removePermission(permissionToRole));
+    }
 }

@@ -163,7 +163,7 @@ public class UserServiceImpl implements UserService {
     public String refreshToken(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
          String authHeader = httpServletRequest.getHeader("Authorization");
          String refreshToken;
-        String userEmail;
+         String userEmail;
         if(authHeader == null || !authHeader.startsWith("Bearer ")){
             return "token is invalid";
         }
@@ -320,6 +320,15 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public Role removePermission(PermissionToRole permissionToRole) {
+        Role role = roleRepository.findRoleByRoleName(permissionToRole.getRole());
+        Collection<Permission> permissions = role.getPermissions();
+        Permission permission = permissionRepository.findByPermissionName(permissionToRole.getPermission());
+        permissions.remove(permission);
+        role.setPermissions(permissions);
+        return roleRepository.save(role);
+    }
 
 
 }

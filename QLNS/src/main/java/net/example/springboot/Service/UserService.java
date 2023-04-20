@@ -19,7 +19,7 @@ import java.util.List;
 public interface UserService {
     User register(RegisterRequest registerRequest);
     AuthenticationResponse login(LoginRequest loginRequest);
-
+    String forgetPassword(ForgetPasswordRequest forgetPasswordRequest) throws MessagingException;
 
 
 
@@ -29,6 +29,7 @@ public interface UserService {
     Role createRole(Role role);
     Permission createPermission(Permission permission);
     void addPermissionToRole(PermissionToRole permissionToRole);
+    Role removePermission(PermissionToRole permissionToRole);
     List<UserDTO> showAllUsers();
     List<UserDTO> showAllGuestUser();
     Page<User> showPageAllUser(int pageNo, int pageSize);
@@ -41,7 +42,4 @@ public interface UserService {
     String refreshToken(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException;
     UserDTO showProfile();
     UserDTO changePassword(ChangePasswordRequest request);
-    String forgetPassword(ForgetPasswordRequest forgetPasswordRequest) throws MessagingException;
-
-
 }

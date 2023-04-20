@@ -17,13 +17,6 @@ public class MailConfig {
         mailSender.setUsername("bcbaa9491afdcb");
         mailSender.setPassword("e90369deca8742");
 
-//        host = "sandbox.smtp.mailtrap.io"
-//        port = 2525
-//        ssl = no
-//        tls = yes
-//        user = "bcbaa9491afdcb"
-//        password = "e90369deca8742"
-
         Properties properties = mailSender.getJavaMailProperties();
         properties.put("mail.smtp.auth", "true");
         properties.put("mail.smtp.starttls.enable", "true");
