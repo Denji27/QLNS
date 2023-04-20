@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,26 +74,28 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AuthenticationResponse login(LoginRequest loginRequest) {
+    public String login(LoginRequest loginRequest) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail()
                         , loginRequest.getPassword())
         );
         User user = userRepository.findByEmail(loginRequest.getEmail());
-        if(!user.getRole().getRoleName().equals("GUEST")) {
+        if(!Objects.equals(user.getRole().getRoleName(), "GUEST") && Objects.equals(user.getStatus(), "approved")) {
             String jwt = jwtService.generateToken(user);
             String refreshToken = jwtService.generateRefreshToken(user);
             revokeAllUsersToken(user);
             saveUserToken(user, jwt);
-            return AuthenticationResponse.builder()
+            AuthenticationResponse authenticationResponse = AuthenticationResponse.builder()
                     .jwt(jwt)
                     .refreshToken(refreshToken)
                     .build();
+            return authenticationResponse.toString();
         }
-        return AuthenticationResponse.builder()
-                .jwt("Your account hasn't been approved yet")
-                .build();
+        if(Objects.equals(user.getStatus(), "banned")){
+            return "Your account has been banned";
+        }
+        return "Your account hasn't been approved yet";
     }
     private void revokeAllUsersToken(User user) {
         var validEmployeeTokens = tokenRepository.findAllValidTokenByUser(user.getId());
@@ -125,16 +128,50 @@ public class UserServiceImpl implements UserService {
         if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))) {
             for (User user : userRepository.findAll()) {
                 if (user.getUsername().equals(assignRequest.getEmail())) {
-                    user.setRole(roleRepository.findRoleByRoleId(assignRequest.getRoleId()));
+                    user.setRole(roleRepository.findRoleByRoleName(assignRequest.getRoleName()));
                     user.setStatus("approved");
                     userRepository.save(user);
                     return "Assign role "
-                            + roleRepository.findRoleByRoleId(assignRequest.getRoleId()).getRoleName()
+                            + assignRequest.getRoleName()
                             + " to "+ assignRequest.getEmail() + " user successfully";
                 }
             }
         }
         return "Your account has no permission to assign role to other people";
+    }
+
+    @Override
+    public String changeRole(AssignRequest assignRequest) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))) {
+            for (User user : userRepository.findAll()) {
+                if (user.getUsername().equals(assignRequest.getEmail())) {
+                    String oldRole = user.getRole().getRoleName();
+                    user.setRole(roleRepository.findRoleByRoleName(assignRequest.getRoleName()));
+                    userRepository.save(user);
+                    return "The role " + oldRole + " of " + assignRequest.getEmail() +
+                            " has been changed to "
+                            + assignRequest.getRoleName();
+                }
+            }
+        }
+        return "Your account has no permission to change role of other people";
+    }
+
+    @Override
+    public String ban(DeleteUserRequest deleteUserRequest) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("BAN"))){
+            User user = userRepository.findByEmail(deleteUserRequest.getEmail());
+            user.setStatus("banned");
+            userRepository.save(user);
+            return "The user " +user.getUsername() + " has been banned and cannot login to the system";
+        }
+        return "You have no permission to ban other account";
     }
 
     @Override
@@ -179,7 +216,7 @@ public class UserServiceImpl implements UserService {
                         .jwt(accessToken)
                         .refreshToken(refreshToken)
                         .build();
-                return "jwt: " + authenticationResponse.getJwt() + "   ========   " + "refreshToken: " + authenticationResponse.getRefreshToken();
+                return authenticationResponse.toString();
             }
         }
         return "@@@";
@@ -300,6 +337,8 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+
+
     @Override
     public void addPermissionToRole(PermissionToRole permissionToRole) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -322,12 +361,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Role removePermission(PermissionToRole permissionToRole) {
-        Role role = roleRepository.findRoleByRoleName(permissionToRole.getRole());
-        Collection<Permission> permissions = role.getPermissions();
-        Permission permission = permissionRepository.findByPermissionName(permissionToRole.getPermission());
-        permissions.remove(permission);
-        role.setPermissions(permissions);
-        return roleRepository.save(role);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User u = userRepository.findByEmail(userEmail);
+        if(u.getRole().getPermissions().contains(permissionRepository.findByPermissionName("CREATE"))) {
+            Role role = roleRepository.findRoleByRoleName(permissionToRole.getRole());
+            Collection<Permission> permissions = role.getPermissions();
+            Permission permission = permissionRepository.findByPermissionName(permissionToRole.getPermission());
+            permissions.remove(permission);
+            role.setPermissions(permissions);
+            return roleRepository.save(role);
+        }
+        return null;
     }
 
 

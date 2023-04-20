@@ -18,7 +18,7 @@ import java.util.List;
 
 public interface UserService {
     User register(RegisterRequest registerRequest);
-    AuthenticationResponse login(LoginRequest loginRequest);
+    String login(LoginRequest loginRequest);
     String forgetPassword(ForgetPasswordRequest forgetPasswordRequest) throws MessagingException;
 
 
@@ -36,6 +36,8 @@ public interface UserService {
     String deleteUser(DeleteUserRequest deleteUserRequest);
     List<RoleDTO> showAllRoles();
     List<PermissionDTO> showAllPermission();
+    String changeRole(AssignRequest assignRequest);
+    String ban(DeleteUserRequest deleteUserRequest);
 
 
     //employee

@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AssignRequest {
     private String email;
-    private long roleId;
+    private String roleName;
 }

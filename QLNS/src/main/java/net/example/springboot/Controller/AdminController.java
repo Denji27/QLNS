@@ -33,6 +33,10 @@ public class AdminController {
     public ResponseEntity<?> assignAsUser(@RequestBody AssignRequest assignRequest) {
         return ResponseEntity.ok(userService.assignRole(assignRequest));
     }
+    @PutMapping("/change-role")
+    public ResponseEntity<?> changeRole(@RequestBody AssignRequest assignRequest){
+        return ResponseEntity.ok(userService.changeRole(assignRequest));
+    }
 
     @GetMapping("/guests")
     public ResponseEntity<?> showAllGuests(){
@@ -57,6 +61,11 @@ public class AdminController {
     @PostMapping("/new-role")
     public ResponseEntity<?> createRole(@RequestBody Role role) {
         return ResponseEntity.ok(userService.createRole(role));
+    }
+
+    @PutMapping("/banned-user")
+    public ResponseEntity<?> ban(@RequestBody DeleteUserRequest deleteUserRequest){
+        return ResponseEntity.ok(userService.ban(deleteUserRequest));
     }
 
     @PostMapping("/permission-to-role")
