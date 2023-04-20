@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.example.springboot.DTO.PermissionDTO;
 import net.example.springboot.DTO.RoleDTO;
 import net.example.springboot.DTO.UserDTO;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
-
+@Slf4j
 public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     private UserRepositoryPageable userRepositoryPageable;
@@ -317,6 +318,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<RoleDTO> showAllRoles() {
         List<Role> roles = roleRepository.findAll();
+//        log.info(userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName()).getAuthorities().toString());
         return roles.stream()
                 .map(r -> modelMapper.map(r, RoleDTO.class))
                 .collect(Collectors.toList());
